@@ -9,7 +9,7 @@
 }:
 
 stdenvNoCC.mkDerivation {
-  pname = "fuchsia-cursor-\${name}";
+  pname = "fuchsia-cursor-${name}";
   version = "2.0.1";
 
   src = ./.;
