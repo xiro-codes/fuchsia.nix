@@ -12,7 +12,7 @@ stdenvNoCC.mkDerivation {
   pname = "fuchsia-cursor-${name}";
   version = "2.0.1";
 
-  src = ./.;
+  src = ../.;
 
   nativeBuildInputs = [
     cbmp

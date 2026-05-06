@@ -7,8 +7,9 @@
 
   outputs = { self, nixpkgs }:
     let
+      inherit (nixpkgs) lib;
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+      forAllSystems = lib.genAttrs supportedSystems;
       nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system; });
     in
     {
@@ -19,9 +20,9 @@
         {
           default = self.packages.${system}.fuchsia-cursor;
           
-          fuchsia-cursor = pkgs.callPackage ./package.nix {};
+          fuchsia-cursor = pkgs.callPackage ./nix/package.nix {};
         });
 
-      homeModules.default = import ./hm-module.nix;
+      homeModules.default = import ./nix/hm-module.nix;
     };
 }
