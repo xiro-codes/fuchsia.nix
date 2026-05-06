@@ -10,7 +10,7 @@
 }:
 
 stdenvNoCC.mkDerivation {
-  pname = "fuchsia-cursor-${name}";
+  pname = "fuchsia-nix-${name}";
   version = "2.0.1";
 
   src = ../.;
@@ -21,7 +21,6 @@ stdenvNoCC.mkDerivation {
   ];
 
   buildPhase = ''
-    set -x
     export HOME=$(pwd)
     #runHook preBuild
 

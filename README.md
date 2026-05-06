@@ -2,6 +2,8 @@
 
 First open source port of [FuchsiaOS](https://fuchsia.dev/)'s cursors for **Linux** and **Windows**.
 
+> **Note**: This is a fork of the original `fuchsia-cursor` project. It specifically aims to add NixOS support, Home Manager modules, and Stylix integration.
+
 [![build](https://github.com/ful1e5/fuchsia-cursor/actions/workflows/build.yml/badge.svg)](https://github.com/ful1e5/fuchsia-cursor/actions)
 
 ## Notes
@@ -74,212 +76,88 @@ First open source port of [FuchsiaOS](https://fuchsia.dev/)'s cursors for **Linu
 -   Outline Color - `#FFFFFF` (White)
 -   Base Color - `#F8B572` (PopOS Orange)
 
-## How to get it
+## Usage (Nix & Home Manager)
 
-### Easiest Way
+This repository provides a Nix flake with a package and a Home Manager module to easily generate and install your customized cursor.
 
-You can download latest `stable` & `development` releases from
-[Release Page](https://github.com/ful1e5/fuchsia-cursor/releases).
+### Flake Setup
 
-## Installing Fuchsia Cursor
+Add the repository to your `flake.nix` inputs:
 
-#### Linux/X11
-
-**Installation:**
-
-```bash
-tar -xvf Fuchsia.tar.gz                   # extract `Fuchsia.tar.gz`
-mv Fuchsia ~/.icons/                      # Install to local users
-sudo mv Fuchsia /usr/share/icons/         # Install to all users
+```nix
+inputs = {
+  # ...
+  fuchsia-nix.url = "github:tod/fuchsia-nix"; # Replace with the actual URL if different
+};
 ```
 
-**Uninstallation:**
+### Home Manager Module Example
 
-```bash
-rm ~/.icons/Fuchsia                       # Remove from local users
-sudo rm /usr/share/icons/Fuchsia          # Remove from all users
+To use the module via Home Manager, import it in your flake and configure your colors:
+
+```nix
+outputs = { self, nixpkgs, home-manager, fuchsia-nix, ... }: {
+  nixosConfigurations."your-hostname" = nixpkgs.lib.nixosSystem {
+    modules = [
+      home-manager.nixosModules.home-manager
+      {
+        home-manager.users.your-username = {
+          imports = [ fuchsia-nix.homeModules.default ];
+          
+          programs.fuchsia-nix = {
+            enable = true;
+            name = "Fuchsia-Custom"; # Name of the generated theme
+            colors = {
+              base = "#00FE00";    # Base/Accent color
+              outline = "#000000"; # Outline color
+            };
+          };
+        };
+      }
+    ];
+  };
+};
 ```
 
-#### Windows
+### NixOS System-Wide Module Example
 
-**Installation:**
+If you want to apply the cursor system-wide (for all users, Display Managers like SDDM/GDM, etc.) regardless of whether you are using GNOME, KDE, or window managers, you can import the NixOS module. It sets the `XCURSOR_THEME` globally and provides a fallback `index.theme`.
 
-1. Unzip `.zip` file
-2. Open unziped directory in Explorer, and **right click** on `install.inf`.
-3. Click 'Install' from the context menu, and authorize the modifications to your system.
-4. Open Control Panel > Personalization and Appearance > Change mouse pointers,
-   and select **Fuchsia Cursors**.
-5. Click '**Apply**'.
-
-**Uninstallation:**
-
-Run the `uninstall.bat` script packed with the `.zip` archive
-
-**OR** follow these steps:
-
-1. Go to **Registry Editor** by typing the same in the _start search box_.
-2. Expand `HKEY_CURRENT_USER` folder and expand `Control Panel` folder.
-3. Go to `Cursors` folder and click on `Schemes` folder - all the available custom cursors that are
-   installed will be listed here.
-4. **Right Click** on the name of cursor file you want to uninstall; for eg.: _Fuchsia Cursors_ and
-   click `Delete`.
-5. Click '**yes**' when prompted.
-
-## Build From Source
-
-### Prerequisites
-
--   Python version 3.7 or higher
--   [clickgen](https://github.com/ful1e5/clickgen)>=2.2.5 (`pip install clickgen`)
--   [yarn](https://github.com/yarnpkg/yarn)
-
-### Quick start
-
-1. Install [build prerequisites](#prerequisites) on your system
-2. `git clone https://github.com/ful1e5/fuchsia-cursor`
-3. `cd fuchsia-cursor`
-4. `yarn install`
-5. `yarn generate`
-6. See [Installing Fuchsia Cursor](#installing-fuchsia-cursor).
-
-### Getting Started
-
-Once you have the [build prerequisites](#prerequisites) installed, You can personalize colors,
-customize sizes, change target platforms, and more. This process involves using external tools,
-as this repository only contains SVG files and configuration for these tools:
-
--   [cbmp](https://github.com/ful1e5/cbmp): Used for customizing colors and generating PNG files.
--   [ctgen](https://github.com/ful1e5/clickgen): Used for customizing sizes and building XCursor and Windows Cursors.
-
-You can refer to the README of each tool for more information on their command-line options.
-
-#### Crafting Your Fuchsia Cursor
-
-The process of creating custom cursor themes involves two main steps:
-
-1. Rendering SVG files to PNG files.
-2. Building cursor themes from PNG files.
-
-#### Customize Colors
-
-`cbmp` provides three options for changing colors:
-
-1. `-bc`: Base color, which replaces the `#00FF00` color in the SVG.
-2. `-oc`: Outlined color, which replaces the `#0000FF` color in the SVG.
-3. `-wc` (optional): Watch Background color, which replaces the `#FF0000` color in the SVG.
-
-```bash
-npx cbmp [...] -bc "<hex>" -oc "<hex>" -wc "<hex>"
+```nix
+outputs = { self, nixpkgs, fuchsia-nix, ... }: {
+  nixosConfigurations."your-hostname" = nixpkgs.lib.nixosSystem {
+    modules = [
+      ./configuration.nix
+      fuchsia-nix.nixosModules.default
+      {
+        programs.fuchsia-nix = {
+          enable = true;
+          name = "Fuchsia-System";
+          size = 24; # Global cursor size
+          colors = {
+            base = "#E11C79";
+            outline = "#FFFFFF";
+          };
+        };
+      }
+    ];
+  };
+};
 ```
 
-Alternatively, you can provide a JSON configuration file to render SVG files, which contains a sequence of `cbmp` commands:
+### Stylix Integration
 
-```bash
-npx cbmp render.json
+If you use [Stylix](https://github.com/danth/stylix) for system-wide theming, this module can automatically grab the appropriate colors from your Stylix palette:
+
+```nix
+programs.fuchsia-nix = {
+  enable = true;
+  name = "Fuchsia-Stylix";
+  stylixIntegration.enable = true;
+};
 ```
 
-#### Customize Sizes
-
-##### Customize Windows Cursor size
-
-To build Windows cursor with size `16`:
-
-```bash
-ctgen configs/win_rg.build.toml -s 16 -d "bitmaps/Fuchsia" -n "Fuchsia" -c "First OpenSource port of FuchsiaOS Windows Cursors with size 16"
-```
-
-You can also customize output directory with `-o` option:
-
-```bash
-ctgen configs/win_xl.build.toml -s 16 -d "bitmaps/Fuchsia" -o "out" -n "Fuchsia" -c "First OpenSource port of FuchsiaOS Windows Cursors with size 16"
-```
-
-##### Customize XCursor size
-
-To build XCursor with size `16`:
-
-```bash
-ctgen configs/x.build.toml -s 16 -d "bitmaps/Fuchsia" -n "Fuchsia" -c "FuchsiaOS XCursors with size 16"
-```
-
-You can also assign multiple sizes to `ctgen` for XCursors build:
-
-```bash
-ctgen configs/x.build.toml -s 16 18 24 32 -d "bitmaps/Fuchsia" -n "Fuchsia" -c "FuchsiaOS XCursors"
-```
-
-#### Examples
-
-Lets generate Fuchsia Cursor with green and black colors:
-
-```bash
-npx cbmp -d "svg" -o "bitmaps/Fuchsia-Hacker" -bc "#00FE00" -oc "#000000"
-```
-
-After rendering custom color you have to build cursor through `ctgen`:
-
--   XCursor:
-    ```bash
-    ctgen configs/x.build.toml -d "bitmaps/Fuchsia-Hacker" -n "Fuchsia-Hacker" -c "Green and Black FuchsiaOS XCursors."
-    ```
--   Windows Regular Cursor:
-    ```bash
-    ctgen configs/win_rg.build.toml -d "bitmaps/Fuchsia-Hacker" -n "Fuchsia-Hacker" -c "Green and Black FuchsiaOS Regular Windows Cursors."
-    ```
--   Windows Large Cursor:
-    ```bash
-    ctgen configs/win_lg.build.toml -d "bitmaps/Fuchsia-Hacker" -n "Fuchsia-Hacker" -c "Green and Black FuchsiaOS Large Windows Cursors."
-    ```
--   Windows Extra Large Cursor:
-    ```bash
-    ctgen configs/win_xl.build.toml -d "bitmaps/Fuchsia-Hacker" -n "Fuchsia-Hacker" -c "Green and Black FuchsiaOS Extra Large Windows Cursors."
-    ```
-
-Afterwards, Generated theme can be found in the `themes` directory.
-
-###### Fuchsia Gruvbox
-
-```bash
-npx cbmp -d "svg" -o "bitmaps/Fuchsia-Gruvbox" -bc "#282828" -oc "#EBDBB2"
-
-ctgen configs/x.build.toml -d "bitmaps/Fuchsia-Gruvbox" -n "Fuchsia-Gruvbox" -c "Groovy FuchsiaOS XCursors."
-ctgen configs/win_rg.build.toml -d "bitmaps/Fuchsia-Gruvbox" -n "Fuchsia-Gruvbox" -c "Groovy FuchsiaOS Windows Regular Cursors."
-ctgen configs/win_lg.build.toml -d "bitmaps/Fuchsia-Gruvbox" -n "Fuchsia-Gruvbox" -c "Groovy FuchsiaOS Windows Large Cursors."
-ctgen configs/win_xl.build.toml -d "bitmaps/Fuchsia-Gruvbox" -n "Fuchsia-Gruvbox" -c "Groovy FuchsiaOS Windows Extra Large Cursors."
-```
-
-###### Fuchsia Solarized Dark
-
-```bash
-npx cbmp -d "svg" -o "bitmaps/Fuchsia-Solarized-Dark" -bc "#002b36" -oc "#839496"
-
-ctgen configs/x.build.toml -d "bitmaps/Fuchsia-Solarized-Dark" -n "Fuchsia-Solarized-Dark" -c "Solarized Dark FuchsiaOS XCursors."
-ctgen configs/win_rg.build.toml -d "bitmaps/Fuchsia-Solarized-Dark" -n "Fuchsia-Solarized-Dark" -c "Solarized Dark FuchsiaOS Windows Regular Cursors."
-ctgen configs/win_lg.build.toml -d "bitmaps/Fuchsia-Solarized-Dark" -n "Fuchsia-Solarized-Dark" -c "Solarized Dark FuchsiaOS Windows Large Cursors."
-ctgen configs/win_xl.build.toml -d "bitmaps/Fuchsia-Solarized-Dark" -n "Fuchsia-Solarized-Dark" -c "Solarized Dark FuchsiaOS Windows Extra Large Cursors."
-```
-
-###### Fuchsia Solarized Light
-
-```bash
-npx cbmp -d "svg" -o "bitmaps/Fuchsia-Solarized-Light" -bc "#839496" -oc "#002b36"
-
-ctgen configs/x.build.toml -d "bitmaps/Fuchsia-Solarized-Light" -n "Fuchsia-Solarized-Light" -c "Solarized Light FuchsiaOS XCursors."
-ctgen configs/win_rg.build.toml -d "bitmaps/Fuchsia-Solarized-Light" -n "Fuchsia-Solarized-Light" -c "Solarized Light FuchsiaOS Windows Regular Cursors."
-ctgen configs/win_lg.build.toml -d "bitmaps/Fuchsia-Solarized-Light" -n "Fuchsia-Solarized-Light" -c "Solarized Light FuchsiaOS Windows Large Cursors."
-ctgen configs/win_xl.build.toml -d "bitmaps/Fuchsia-Solarized-Light" -n "Fuchsia-Solarized-Light" -c "Solarized Light FuchsiaOS Windows Extra Large Cursors."
-```
-
-###### Fuchsia Dracula
-
-```bash
-npx cbmp -d "svg" -o "bitmaas/Fuchsia-Dracula" -bc "#282a36" -oc "#f8f8f2"
-
-ctgen configs/x.build.toml -d "bitmaps/Fuchsia-Dracula" -n "Fuchsia-Dracula" -c "Dracula FuchsiaOS XCursors."
-ctgen configs/win_rg.build.toml -d "bitmaps/Fuchsia-Dracula" -n "Fuchsia-Dracula" -c "Dracula FuchsiaOS Windows Regular Cursors."
-ctgen configs/win_lg.build.toml -d "bitmaps/Fuchsia-Dracula" -n "Fuchsia-Dracula" -c "Dracula FuchsiaOS Windows Large Cursors."
-ctgen configs/win_xl.build.toml -d "bitmaps/Fuchsia-Dracula" -n "Fuchsia-Dracula" -c "Dracula FuchsiaOS Windows Extra Large Cursors."
-```
+When `stylixIntegration.enable` is true, it will automatically set `stylix.cursor.package` and `stylix.cursor.name` to use your customized Fuchsia cursor.
 
 ## Testing Cursor
 
