@@ -3,6 +3,7 @@
   stdenvNoCC,
   cbmp,
   clickgen,
+  strace,
   name ? "Fuchsia",
   baseColor ? "#E11C79",
   outlineColor ? "#FFFFFF",
@@ -20,38 +21,26 @@ stdenvNoCC.mkDerivation {
   ];
 
   buildPhase = ''
-    runHook preBuild
+    set -x
+    export HOME=$(pwd)
+    #runHook preBuild
 
-    # Generate custom render.json for the desired colors
-    cat > render.json <<EOF
-    {
-      "${name}": {
-        "dir": "svg",
-        "out": "bitmaps/${name}",
-        "colors": [
-          { "match": "#00FF00", "replace": "${baseColor}" },
-          { "match": "#0000FF", "replace": "${outlineColor}" }
-        ]
-      }
-    }
-    EOF
-
-    # Render SVGs to bitmaps
-    cbmp render.json
+    # Render SVGs to bitmaps using CLI arguments
+    CI=1 cbmp -d svg -o "bitmaps/${name}" -bc "${baseColor}" -oc "${outlineColor}"
 
     # Build cursors using clickgen
     # Assuming x.build.toml is correctly set up for the basic build
-    ctgen "configs/x.build.toml" -p x11 -d "bitmaps/${name}" -n "${name}" -c "${name} Cursors"
+    ctgen configs/x.build.toml -p x11 -d "bitmaps/${name}" -n "${name}" -c "${name} Cursors" -s 16 18 24 32
 
     runHook postBuild
   '';
 
   installPhase = ''
     runHook preInstall
-    
+
     mkdir -p $out/share/icons
     cp -r themes/${name} $out/share/icons/
-    
+
     runHook postInstall
   '';
 

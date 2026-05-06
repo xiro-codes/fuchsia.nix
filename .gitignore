@@ -1,7 +1,9 @@
 themes
 bitmaps
 bin
-
+.direnv
+AGENTS.md
+result
 # Logs
 logs
 *.log
