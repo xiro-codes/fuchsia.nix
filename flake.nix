@@ -18,11 +18,12 @@
           pkgs = nixpkgsFor.${system};
         in
         {
-          default = self.packages.${system}.fuchsia-cursor;
+          default = self.packages.${system}.fuchsia-nix;
           
-          fuchsia-cursor = pkgs.callPackage ./nix/package.nix {};
+          fuchsia-nix = pkgs.callPackage ./nix/package.nix {};
         });
 
       homeModules.default = import ./nix/hm-module.nix;
+      nixosModules.default = import ./nix/nixos-module.nix;
     };
 }
